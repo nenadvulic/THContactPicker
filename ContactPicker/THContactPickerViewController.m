@@ -15,7 +15,7 @@ UIBarButtonItem *barButton;
 @interface THContactPickerViewController ()
 
 @property (nonatomic, assign) ABAddressBookRef addressBookRef;
-
+@property (nonatomic, weak) IBOutlet UINavigationBar *_navbar;
 @end
 
 //#define kKeyboardHeight 216.0
@@ -41,6 +41,7 @@ UIBarButtonItem *barButton;
     // Do any additional setup after loading the view from its nib.
     //    UIBarButtonItem * barButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonItemStyleBordered target:self action:@selector(removeAllContacts:)];
     
+    self.navigationController.navigationBarHidden = NO;
     barButton = [[UIBarButtonItem alloc] initWithTitle:@"Done" style:UIBarButtonItemStyleDone target:self action:@selector(done:)];
     barButton.enabled = FALSE;
     
@@ -87,6 +88,18 @@ UIBarButtonItem *barButton;
         {
             THContact *contact = [[THContact alloc] init];
             ABRecordRef contactPerson = (__bridge ABRecordRef)allContacts[i];
+            
+            
+            ABMultiValueRef emailRef = ABRecordCopyValue(contactPerson, kABPersonEmailProperty);
+            if ( ABMultiValueGetCount(emailRef) > 0 ){
+                NSString *firstEmail = (__bridge_transfer NSString*)ABMultiValueCopyValueAtIndex(emailRef, 0);
+                contact.email = firstEmail;
+                CFRelease(emailRef);
+            }else{
+                continue;
+            }
+            
+            
             // Get first and last names
             NSString *firstName = (__bridge_transfer NSString*)ABRecordCopyValue(contactPerson, kABPersonFirstNameProperty);
             NSString *lastName = (__bridge_transfer NSString*)ABRecordCopyValue(contactPerson, kABPersonLastNameProperty);
@@ -388,12 +401,12 @@ UIBarButtonItem *barButton;
 
 - (void)done:(id)sender
 {
-    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Done!"
-                                                        message:@"Now do whatevet you want!"
-                                                       delegate:nil
-                                              cancelButtonTitle:@"Ok"
-                                              otherButtonTitles:nil];
-    [alertView show];
+    if ( _delegate ){
+        [_delegate pickedContacts:self.selectedContacts];
+        [self.navigationController popViewControllerAnimated:YES];
+        
+    }
+    
 }
 
 @end
